@@ -1,12 +1,44 @@
+:root {
+  --amplify-colors-background-primary: #1a1a1a;
+  --amplify-colors-background-secondary: #2d2d2d;
+  --amplify-colors-background-tertiary: #3d3d3d;
+  --amplify-colors-font-primary: #ffffff;
+  --amplify-colors-font-secondary: #e0e0e0;
+  --amplify-colors-font-tertiary: #b0b0b0;
+  --amplify-colors-border-primary: #404040;
+  --amplify-colors-border-secondary: #505050;
+  --amplify-colors-brand-primary: #0070f3;
+  --amplify-colors-brand-secondary: #0051a8;
+}
+
 body {
   margin: 0;
-  background: linear-gradient(180deg, rgb(117, 81, 194), rgb(255, 255, 255));
-  display: flex;
-  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
-  height: 100vh;
-  width: 100vw;
-  justify-content: center;
-  align-items: center;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.amplify-card {
+  background-color: #2d2d2d !important;
+  border-color: #404040 !important;
+}
+
+.amplify-button {
+  color: #ffffff !important;
+}
+
+.amplify-input {
+  background-color: #2d2d2d !important;
+  color: #ffffff !important;
+  border-color: #404040 !important;
+}
+
+.amplify-text {
+  color: #ffffff !important;
 }
 
 main {
