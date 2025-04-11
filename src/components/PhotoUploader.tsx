@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { uploadData } from 'aws-amplify/storage';
 import { Button, Card, Flex, Image, Text } from '@aws-amplify/ui-react';
 import { generateClient } from 'aws-amplify/data';
+import { getCurrentUser } from 'aws-amplify/auth';
 import type { Schema } from '../../amplify/data/resource';
 
 const client = generateClient<Schema>();
@@ -10,13 +11,34 @@ interface Photo {
   id: string;
   uri: string;
   name: string;
+  owner: string | null;
 }
+
+const ProgressBar = ({ progress }: { progress: number }) => (
+  <div style={{
+    width: '100%',
+    backgroundColor: '#2d2d2d',
+    borderRadius: '4px',
+    marginTop: '1rem',
+    overflow: 'hidden'
+  }}>
+    <div
+      style={{
+        width: `${progress}%`,
+        backgroundColor: '#0070f3',
+        height: '4px',
+        transition: 'width 0.3s ease-in-out'
+      }}
+    />
+  </div>
+);
 
 export const PhotoUploader = () => {
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [currentFileName, setCurrentFileName] = useState<string | null>(null);
 
   useEffect(() => {
     console.log('PhotoUploader component mounted, fetching photos...');
@@ -32,7 +54,12 @@ export const PhotoUploader = () => {
       if (response.data) {
         console.log('Successfully retrieved photos:', {
           count: response.data.length,
-          photos: response.data.map(p => ({ id: p.id, name: p.name, uri: p.uri }))
+          photos: response.data.map(p => ({ 
+            id: p.id, 
+            name: p.name, 
+            uri: p.uri,
+            owner: p.owner
+          }))
         });
         setPhotos(response.data);
       } else {
@@ -55,6 +82,11 @@ export const PhotoUploader = () => {
       return;
     }
 
+    setCurrentFileName(file.name);
+    setUploadProgress(0);
+    setUploading(true);
+    setError(null);
+
     console.log('Starting file upload:', {
       fileName: file.name,
       fileSize: file.size,
@@ -62,8 +94,8 @@ export const PhotoUploader = () => {
     });
 
     try {
-      setUploading(true);
-      setError(null);
+      // Get current user
+      const user = await getCurrentUser();
       const key = `public/${Date.now()}-${file.name}`;
       console.log('Generated S3 key for upload:', key);
 
@@ -90,10 +122,11 @@ export const PhotoUploader = () => {
         result
       });
 
-      console.log('Creating photo entity in database...');
+      console.log('Creating photo entity in database with owner:', user.userId);
       const createResponse = await client.models.Photo.create({
         uri: key,
-        name: file.name
+        name: file.name,
+        owner: user.userId
       });
       
       console.log('Database create response:', createResponse);
@@ -102,10 +135,10 @@ export const PhotoUploader = () => {
         console.log('Photo entity created:', {
           id: createResponse.data.id,
           uri: createResponse.data.uri,
-          name: createResponse.data.name
+          name: createResponse.data.name,
+          owner: createResponse.data.owner
         });
         
-        // Wait a short moment before fetching to ensure database consistency
         await new Promise(resolve => setTimeout(resolve, 1000));
         
         console.log('Refreshing photos list...');
@@ -125,6 +158,7 @@ export const PhotoUploader = () => {
     } finally {
       setUploading(false);
       setUploadProgress(0);
+      setCurrentFileName(null);
     }
   };
 
@@ -171,31 +205,43 @@ export const PhotoUploader = () => {
           {error}
         </div>
       )}
-      <input
-        type="file"
-        accept="image/*"
-        onChange={handleFileUpload}
-        disabled={uploading}
-        style={{ display: 'none' }}
-        id="file-upload"
-      />
-      <label htmlFor="file-upload">
-        <Button
-          as="span"
-          isLoading={uploading}
-          loadingText={`Uploading... ${Math.round(uploadProgress)}%`}
-          style={{ 
-            backgroundColor: '#0070f3',
-            color: '#ffffff',
-            border: 'none',
-            padding: '0.5rem 1rem',
-            borderRadius: '4px',
-            cursor: 'pointer'
-          }}
-        >
-          Upload Photo
-        </Button>
-      </label>
+      
+      <div style={{ marginBottom: '2rem' }}>
+        <input
+          type="file"
+          accept="image/*"
+          onChange={handleFileUpload}
+          disabled={uploading}
+          style={{ display: 'none' }}
+          id="file-upload"
+        />
+        <label htmlFor="file-upload">
+          <Button
+            as="span"
+            isLoading={uploading}
+            loadingText="Uploading..."
+            style={{ 
+              backgroundColor: '#0070f3',
+              color: '#ffffff',
+              border: 'none',
+              padding: '0.5rem 1rem',
+              borderRadius: '4px',
+              cursor: 'pointer'
+            }}
+          >
+            Upload Photo
+          </Button>
+        </label>
+
+        {uploading && currentFileName && (
+          <div style={{ marginTop: '1rem' }}>
+            <Text style={{ color: '#ffffff', marginBottom: '0.5rem' }}>
+              Uploading {currentFileName} ({Math.round(uploadProgress)}%)
+            </Text>
+            <ProgressBar progress={uploadProgress} />
+          </div>
+        )}
+      </div>
 
       <Flex 
         wrap="wrap" 

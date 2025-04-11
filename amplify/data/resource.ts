@@ -17,6 +17,7 @@ const schema = a.schema({
     .model({
       uri: a.string().required(),
       name: a.string().required(),
+      owner: a.string(),
     })
     .authorization((allow) => [
       allow.publicApiKey().to(['read']),
