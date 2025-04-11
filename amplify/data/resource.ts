@@ -19,8 +19,8 @@ const schema = a.schema({
       name: a.string().required(),
     })
     .authorization((allow) => [
-      allow.authenticated().to(['read', 'create']),
-      allow.owner().to(['delete'])
+      allow.publicApiKey().to(['read']),
+      allow.authenticated().to(['create', 'read', 'delete'])
     ]),
 });
 
